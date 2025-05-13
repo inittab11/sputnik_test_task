@@ -29,11 +29,11 @@
     state: present
   notify: Restart SSH
 
-- name: Restrict SSH to base_test_user
+- name: Restrict SSH to base_docker_user
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^AllowUsers'
-    line: 'AllowUsers {{ base_test_user }}'
+    line: 'AllowUsers {{ base_docker_user }}'
     state: present
   notify: Restart SSH
 
