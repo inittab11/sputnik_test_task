@@ -26,7 +26,7 @@ echo "Копируем на сервер $REMOTE_HOST:$REMOTE_DIR ..."
 scp "$LOCAL_BACKUP_PATH" "${REMOTE_SSH_USER}@${REMOTE_HOST}:${REMOTE_DIR}/"
 
 if [[ "$USE_MINIO" == "true" ]]; then
-  echo "☁️ Загружаем бэкап в MinIO..."
+  echo "Загружаем бэкап в MinIO..."
   aws --endpoint-url "$MINIO_ENDPOINT" \
     s3 cp "$LOCAL_BACKUP_PATH" "s3://${MINIO_BUCKET}/$BACKUP_NAME"
 fi
