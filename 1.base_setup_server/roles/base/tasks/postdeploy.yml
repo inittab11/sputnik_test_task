@@ -1,5 +1,5 @@
 ---
-- name: Validate Docker access for base_test_user
+- name: Validate Docker access for base_docker_user
   ansible.builtin.command:
     cmd: docker ps
   become: true
