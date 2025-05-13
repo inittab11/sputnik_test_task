@@ -1,0 +1,7 @@
+---
+- name: Base Server Setup
+  hosts: all
+  become: true
+
+  roles:
+    - base

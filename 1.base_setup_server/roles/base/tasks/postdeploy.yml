@@ -1,0 +1,19 @@
+---
+- name: Validate Docker access for base_test_user
+  ansible.builtin.command:
+    cmd: docker ps
+  become: true
+  become_user: "{{ base_docker_user }}"
+  register: docker_test
+  failed_when: docker_test.rc != 0
+  changed_when: false
+
+- name: Validate Docker Compose present
+  ansible.builtin.stat:
+    path: /usr/local/bin/docker-compose
+  register: compose_stat
+
+- name: Fail if Docker Compose missing
+  ansible.builtin.fail:
+    msg: "Docker Compose not installed"
+  when: not compose_stat.stat.exists

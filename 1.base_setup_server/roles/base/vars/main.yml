@@ -1,0 +1,7 @@
+---
+base_docker_versions:
+  ubuntu: "5:28.1.1-1~ubuntu.24.04~noble"
+  Rocky: "28.1.1-1.el9"
+# and other shit
+base_docker_compose_version: "v2.24.2"
+base_docker_user: "testuser"

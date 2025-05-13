@@ -1,0 +1,76 @@
+stages:
+  - build
+  - deploy
+  - post-deploying
+
+variables:
+  CI_REGISTRY_IMAGE: registry.gitlab.com/mygroup/myapp  # Docker Registry
+  DEV_SERVER: dev.example.com
+  STAGE_SERVER: stage.example.com
+  PROD_SERVER: prod.example.com
+
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay2
+  script:
+    - echo "Версия из тега: $CI_COMMIT_TAG"
+    - export VERSION=$(echo $CI_COMMIT_TAG | sed 's/^v//')  # извлечение VERSION
+    - echo "Сборка образа $CI_REGISTRY_IMAGE:$VERSION"
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$VERSION .
+    - docker push $CI_REGISTRY_IMAGE:$VERSION
+  rules:
+    - if: '$CI_COMMIT_TAG'  # запуск по тегу
+
+deploy:
+  stage: deploy
+  before_script:
+    - echo "Проверка ресурсов на $DEPLOY_SERVER"
+    - cpu=$(ssh $DEPLOY_SERVER nproc)
+    - mem=$(ssh $DEPLOY_SERVER free -m | awk '/Mem:/ {print $2}')
+    - if [ "$cpu" -lt 2 ] || [ "$mem" -lt 2048 ]; then echo "Недостаточно ресурсов: $cpu CPU, $mem MB RAM" && exit 1; fi
+  script:
+    - export VERSION=$(echo $CI_COMMIT_TAG | sed 's/^v//')
+    - echo "Деплой версии $VERSION в $ENVIRONMENT"
+    - ssh $DEPLOY_SERVER "docker pull $CI_REGISTRY_IMAGE:$VERSION"
+    - ssh $DEPLOY_SERVER "docker stop myapp || true"
+    - ssh $DEPLOY_SERVER "docker rm myapp || true"
+    - ssh $DEPLOY_SERVER "docker run -d --name myapp $CI_REGISTRY_IMAGE:$VERSION"
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'  # stable → prod
+      variables:
+        ENVIRONMENT: production
+        DEPLOY_SERVER: $PROD_SERVER
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+-rc.*$/'  # rc → stage
+      variables:
+        ENVIRONMENT: stage
+        DEPLOY_SERVER: $STAGE_SERVER
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+-beta.*$/'  # beta → dev
+      variables:
+        ENVIRONMENT: develop
+        DEPLOY_SERVER: $DEV_SERVER
+    - when: never
+  environment:
+    name: $ENVIRONMENT
+    url: http://$DEPLOY_SERVER/
+
+healthcheck:
+  stage: post-deploying
+  script:
+    - echo "Healthcheck для http://$DEPLOY_SERVER/"
+    - if curl -sSf "http://$DEPLOY_SERVER/"; then echo "Application is UP"; else echo "Application is DOWN" && exit 1; fi
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+      variables:
+        DEPLOY_SERVER: $PROD_SERVER
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+-rc.*$/'
+      variables:
+        DEPLOY_SERVER: $STAGE_SERVER
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+-beta.*$/'
+      variables:
+        DEPLOY_SERVER: $DEV_SERVER
+    - when: never

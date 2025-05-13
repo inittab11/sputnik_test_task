@@ -1,0 +1,47 @@
+---
+- name: Set docker_version fact for RedHat
+  ansible.builtin.set_fact:
+    docker_version: "{{ base_docker_versions[ansible_distribution] }}"
+
+- name: Install acl, net-tools, jq
+  ansible.builtin.dnf:
+    name:
+      - acl
+      - net-tools
+      - jq
+    state: present
+
+- name: Add Docker GPG key
+  ansible.builtin.rpm_key:
+    key: "https://download.docker.com/linux/centos/gpg"
+    state: present
+
+- name: Add Docker repository
+  ansible.builtin.yum_repository:
+    name: docker-ce
+    description: Docker CE Stable Repo
+    baseurl: https://download.docker.com/linux/centos/$releasever/x86_64/stable
+    enabled: true
+    gpgcheck: true
+    gpgkey: https://download.docker.com/linux/centos/gpg
+
+- name: Install Docker ce
+  ansible.builtin.dnf:
+    name:
+      - "docker-ce-{{ docker_version }}"
+      - "docker-ce-cli-{{ docker_version }}"
+      - containerd.io
+    state: present
+
+- name: Install Docker Compose
+  ansible.builtin.get_url:
+    url: |
+      https://github.com/docker/compose/releases/download/{{ base_docker_compose_version }}/docker-compose-{{ ansible_system | lower }}-{{ ansible_architecture }}
+    dest: /usr/local/bin/docker-compose
+    mode: 'u+x'
+
+- name: Enable and start Docker service
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: true

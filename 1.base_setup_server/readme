@@ -1,0 +1,12 @@
+
+## Запуск
+
+1. Заполнить `inventory.ini` своими данными.
+2. Добавить версию Docker в `roles/base/vars/main.yml`.
+3. Запуск:
+```
+make deploy
+```
+
+########
+протестировано на: Ubuntu24.04, Rocky9.5.

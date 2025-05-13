@@ -1,0 +1,35 @@
+---
+- name: Install Debian-base
+  ansible.builtin.include_tasks: install_debian.yml
+  when: ansible_os_family == "Debian"
+
+- name: Install rhel-base
+  ansible.builtin.include_tasks: install_redhat.yml
+  when: ansible_os_family == "RedHat"
+
+- name: Create user {{ base_test_user }}
+  ansible.builtin.user:
+    name: "{{ base_docker_user }}"
+    state: present
+    shell: /bin/bash
+
+- name: group docker to {{ base_test_user }}
+  ansible.builtin.user:
+    name: "{{ base_docker_user }}"
+    groups: docker
+    append: true
+  become: true
+
+- name: Change docker-compose permissions
+  ansible.builtin.file:
+    path: /usr/local/bin/docker-compose
+    owner: root
+    group: root
+    mode: '0755'
+  become: true
+
+- name: Harden SSH
+  ansible.builtin.include_tasks: ssh_hardening.yml
+
+- name: Post-deploy validation
+  ansible.builtin.include_tasks: postdeploy.yml
