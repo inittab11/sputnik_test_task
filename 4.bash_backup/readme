@@ -1,0 +1,3 @@
+# перед запуском изменить переменные
+$ chmod +x ./backup_postgres.sh
+$ ./backup_postgres.sh

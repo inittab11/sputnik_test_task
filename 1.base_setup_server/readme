@@ -1,7 +1,7 @@
 
 ## Запуск
 
-1. Заполнить `inventory.ini` своими данными.
+1. Заполнить `inventory.ini` своими хостами.
 2. Добавить версию Docker в `roles/base/vars/main.yml`.
 3. Запуск:
 ```
