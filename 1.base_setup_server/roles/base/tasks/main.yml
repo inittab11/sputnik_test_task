@@ -7,13 +7,13 @@
   ansible.builtin.include_tasks: install_redhat.yml
   when: ansible_os_family == "RedHat"
 
-- name: Create user {{ base_test_user }}
+- name: Create user {{ base_docker_user }}
   ansible.builtin.user:
     name: "{{ base_docker_user }}"
     state: present
     shell: /bin/bash
 
-- name: group docker to {{ base_test_user }}
+- name: group docker to {{ base_docker_user }}
   ansible.builtin.user:
     name: "{{ base_docker_user }}"
     groups: docker
