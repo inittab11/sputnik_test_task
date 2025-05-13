@@ -1,0 +1,83 @@
+services:
+  nginx-acme:
+    image: nginxproxy/acme-companion
+    container_name: nginx-acme
+    depends_on:
+      - nginx-proxy
+    environment:
+      NGINX_PROXY_CONTAINER: nginx-proxy
+      ACME_CA_URI: https://acme-v02.api.letsencrypt.org/directory
+      DEFAULT_EMAIL: ${LETSENCRYPT_EMAIL:?}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./nginx/certs:/etc/nginx/certs:rw
+      - ./nginx/vhost.d:/etc/nginx/vhost.d
+      - ./nginx/html:/usr/share/nginx/html
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  react-app:
+    build:
+      context: ${REACT_APP_PATH}/app
+      dockerfile: ../Dockerfile
+      args:
+        REACT_APP_TEST_VAR: ${REACT_APP_TEST_VAR:?}
+    image: react-app:latest
+    environment:
+      NODE_ENV: production
+      VIRTUAL_HOST: ${BASE_DOMAIN}
+      VIRTUAL_PORT: 3000
+      LETSENCRYPT_HOST: ${BASE_DOMAIN}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+    ports:
+      - "3000:3000"
+    command: ["serve", "-s", "build", "-l", "3000", "--single"]
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3000 || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    restart: always
+    environment:
+      VIRTUAL_HOST: portainer.${BASE_DOMAIN}
+      VIRTUAL_PORT: 9000
+      LETSENCRYPT_HOST: portainer.${BASE_DOMAIN}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:?}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+volumes:
+  portainer_data:
+    

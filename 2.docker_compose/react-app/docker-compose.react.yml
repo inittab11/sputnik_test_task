@@ -1,0 +1,29 @@
+services:
+  react-app:
+    build:
+      context: ../react-app/app
+      dockerfile: ../react-app/Dockerfile
+      args:
+        REACT_APP_TEST_VAR: ${REACT_APP_TEST_VAR:?}
+    environment:
+      VIRTUAL_HOST: ${BASE_DOMAIN}
+      VIRTUAL_PORT: 3000
+      LETSENCRYPT_HOST: ${BASE_DOMAIN}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:?}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ['CMD-SHELL','curl -f http://localhost:3000 || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'

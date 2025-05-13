@@ -1,0 +1,33 @@
+services:
+  react-app:
+    build:
+      context: ${REACT_APP_PATH}/app
+      dockerfile: ../../react-app/Dockerfile.dev
+      args:
+        REACT_APP_TEST_VAR: ${REACT_APP_TEST_VAR:?}
+    image: react-app-dev:latest
+    working_dir: /app
+    volumes:
+      - ${REACT_APP_PATH}/app:/app:delegated
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - HOST=0.0.0.0
+    ports:
+      - "3000:3000"
+    command: sh -c "npm install && npm start"
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:3000 || exit 1']
+      interval: 20s
+      timeout: 10s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
